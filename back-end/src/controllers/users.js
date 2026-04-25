@@ -1,10 +1,27 @@
 import prisma from '../database/client.js'
 import jwt from 'jsonwebtoken'
+import argon2 from 'argon2'
+
+
+const ARGON2_CONFIG = {
+ type: argon2.argon2id,  // variante recomendada do algoritmo
+ memoryCost: 65536,      // 64 KB de memória máxima utilizada
+ timeCost: 3,            // número de iterações
+ parallelism: 4          // número de threads simultâneas
+}
+
 
 const controller = {}     // Objeto vazio
 
 controller.create = async function(req, res) {
   try {
+    // Caso exista o campo "password" em req.body, é
+   // necessário gerar o hash da senha antes de
+   // armazená-la no BD, usando o algoritmo argon2
+   if(req.body.password) {
+     req.body.password = await argon2.hash(req.body.password, ARGON2_CONFIG)
+   }
+
 
     await prisma.user.create({ data: req.body })
 
@@ -55,6 +72,13 @@ controller.retrieveOne = async function(req, res) {
 
 controller.update = async function(req, res) {
   try {
+    // Caso exista o campo "password" em req.body, é
+   // necessário gerar o hash da senha antes de
+   // armazená-la no BD, usando o algoritmo argon2
+   if(req.body.password) {
+     req.body.password = await argon2.hash(req.body.password, ARGON2_CONFIG)
+   }
+
 
     const result = await prisma.user.update({
       where: { id: Number(req.params.id) },
